@@ -1,0 +1,34 @@
+$InputColor: lighten(rgb(61, 96, 212), 42%);
+
+
+.profile-wrapper{
+    padding: 2rem;
+    width: 100%;
+    height: 100%;
+    color: black;
+    background-color: white;
+    margin: 2rem;
+    font-size: .75rem;
+}
+
+.profile-pic-container{
+    display: flex;
+    flex-direction: column;
+
+}
+
+.profile-pic-container input{
+    font-size: .75rem;
+    background-color: white;
+}
+
+.profile-name-container{
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-name{
+    background-color: InputColor;
+    padding: 1rem;
+    width: 60%;
+}
