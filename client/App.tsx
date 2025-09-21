@@ -7,7 +7,7 @@ import CreateUser from  './pages/CreateUser/CreateUser'
 import Profile from './pages/Profile/Profile';
 
 function App() {
-  const isLoggedIn = true
+  const isLoggedIn = false
   const [open, setOpen] = useState(false)
   const [profileImage, setProfileImage] = useState(null)
 

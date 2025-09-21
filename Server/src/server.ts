@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(express.urlencoded( { extended: true }));
 
 // * handle reqs for static files, assuming vite builds to '../../Client/dist' ?  * //
-app.use(express.static(path.resolve(import.meta.dirname, '')));  //
+app.use(express.static(path.resolve(import.meta.dirname, '../../client')));  //
 
 
 // * error handling for DB queries * //
@@ -79,22 +79,22 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
 
 
 // get balances for a user (aggregated)
-app.get("/balances", async (req: Request, res: Response) => {
-    const fromUserId = req.param.from_user;
-    const toUserId = req.param.to_user;
+// app.get("/balances", async (req: Request, res: Response) => {
+//     const fromUserId = req.param.from_user;
+//     const toUserId = req.param.to_user;
 
-    if (typeof req !== String) {
+//     if (typeof req !== String) {
 
-    }
-    try {
+//     }
+//     try {
     
-        SELECT amount 
-        FROM balances
-        WHERE from_user = fromUserId AND to_user = toUserId;
+//         SELECT amount 
+//         FROM balances
+//         WHERE from_user = fromUserId AND to_user = toUserId;
 
 
-    }
-} )
+//     }
+// } )
 
 
 app.listen(PORT, () => {
