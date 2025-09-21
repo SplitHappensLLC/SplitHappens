@@ -2,7 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 // import apiRouter from ;
 import { Pool } from 'pg';
-import path from 'path'  // add for serving static files 
+import path from 'path';  // add for serving static files 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,6 +12,8 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false } // necessary for supabase connect
   });
+
+//pool.connect()
 
 // * middleware to parse JSON & URL-encoded bodies * //
 app.use(express.json());
@@ -77,7 +79,22 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
 
 
 // get balances for a user (aggregated)
+app.get("/balances", async (req: Request, res: Response) => {
+    const fromUserId = req.param.from_user;
+    const toUserId = req.param.to_user;
 
+    if (typeof req !== String) {
+
+    }
+    try {
+    
+        SELECT amount 
+        FROM balances
+        WHERE from_user = fromUserId AND to_user = toUserId;
+
+
+    }
+} )
 
 
 app.listen(PORT, () => {
