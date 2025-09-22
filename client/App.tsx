@@ -14,6 +14,7 @@ function App() {
   const [open, setOpen] = useState(false)
   const [profileImage, setProfileImage] = useState(null)
   // const [roomName, setRoomName] = useState("")
+  // const [roomId, setRoomId] = useState("")
 
 
   return (

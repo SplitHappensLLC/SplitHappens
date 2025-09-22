@@ -284,7 +284,89 @@ app.get('api/expenses/:group_id', async (req: Request, res: Response) => {
 })
 
 
-// 
+
+
+// app.post('api/expense_items', async (req: Request, res: Response) => {
+//   const { description, amount } = req.body;
+
+//   try {
+//   const { data, error } = await supabaseAdmin.from('expense')
+//     .insert({
+//       group_id,
+//       user_id: req.user.id,
+//       amount,
+//       description,
+//     }) 
+//     .select()
+//     .single();
+//     if(error) throw error;
+//     res.status(201).json(data);
+// } catch (err) {
+//   res.status(500).json({ error: (err as Error).message});
+// }
+//})
+
+// Handler: Create a new expense with associated items (POST request; calculates total from item amounts)
+app.post('/api/groups/:groupId/expenses', async (req: Request, res: Response) => {
+  try {
+    // Verify user in group and get user ID from auth middleware
+    const { data: membership, error: membershipError } = await supabaseAdmin
+      .from('group_members')
+      .select('user_id')
+      .eq('group_id', req.params.groupId)
+      .eq('user_id', (req.user as any).id);
+    if (membershipError || membership.length === 0) throw new Error('User not in group');
+
+    const { description, paid_by, items } = req.body;  // Expect body: { description: string, paid_by: uuid, items: [{description: string, amount: number}] }
+
+    if (!description || !paid_by || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Missing required fields: description, paid_by, or items array' });
+    }
+
+    // Calculate total from item amounts
+    const total_amount = items.reduce((sum: number, item: { amount: number }) => sum + (item.amount || 0), 0);
+
+    // Insert expense
+    const { data: expense, error: expenseError } = await supabaseAdmin
+      .from('expenses')
+      .insert({
+        description,
+        amount: total_amount,
+        paid_by,
+        group_id: req.params.groupId,
+        created_at: new Date().toISOString()  // Or rely on DB default
+      })
+      .select()
+      .single();
+
+    if (expenseError) throw expenseError;
+
+    // Insert associated items (batch for efficiency)
+    const itemInserts = items.map((item: { description: string, amount: number }) => ({
+      expense_id: expense.id,
+      description: item.description,
+      amount: item.amount,
+      created_at: new Date().toISOString()
+    }));
+
+    const { data: insertedItems, error: itemsError } = await supabaseAdmin
+      .from('expense_items')
+      .insert(itemInserts)
+      .select();
+
+    if (itemsError) throw itemsError;
+
+    // Return the created expense with nested items
+    res.status(201).json({
+      ...expense,
+      total_amount,
+      items: insertedItems
+    });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 
 
 // * error handling for DB queries * //

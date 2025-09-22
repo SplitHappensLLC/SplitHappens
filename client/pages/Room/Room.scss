@@ -3,6 +3,32 @@
     background-color: white;
     width: 100%;
     height: 100%;
-    margin: 1rem ;
+    margin-top: 1rem;
+    margin-left: 1rem;
+    margin-right: 1rem;
+    margin-bottom: 0;
     padding: .5rem;
+}
+
+.welcome-room-title{
+    margin-bottom: 1rem;
+}
+
+.room-content-container{
+    border: 1px solid grey;
+    width: 100%;
+    min-height: 90%;
+    display: flex;
+}
+
+.expense-container{
+    width: 40%;
+    height: 100%;
+    background-color: white;
+}
+
+.group-users-container{
+    width: 60%;
+    height: 100%;
+    background-color: white;
 }
