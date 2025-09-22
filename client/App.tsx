@@ -7,7 +7,7 @@ import CreateUser from  './pages/CreateUser/CreateUser'
 import Profile from './pages/Profile/Profile';
 
 function App() {
-  const isLoggedIn = false
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [open, setOpen] = useState(false)
   const [profileImage, setProfileImage] = useState(null)
 
@@ -35,7 +35,7 @@ function App() {
     </div> 
     <Routes>
       <Route path="/" element={isLoggedIn ? <Home /> : <Navigate to="login"/>}/>
-      <Route path="/login" element={<Login />}/>
+      <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />}/>
       <Route path="/create-account" element={<CreateUser />}/>
       <Route path="/profile" element={<Profile setProfileImage={setProfileImage} />} />
     </Routes>

@@ -27,7 +27,7 @@ $InputColor: lighten(rgb(61, 96, 212), 42%);
     flex-direction: column;
 }
 
-.user-container, .pass-container{
+.user-container, .pass-container, .email-container{
     display: flex;
     flex-direction: column;
     outline: none;
@@ -49,7 +49,7 @@ input:focus{
     outline: none;
 }
 
-.user-container, .pass-container label{
+.user-container, .pass-container, .email-container label{
     color: black;
 }
 

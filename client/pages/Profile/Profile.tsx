@@ -1,5 +1,7 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import "./Profile.scss"
+import { supabase } from "../../supabase/supabaseClient"; // adjust path
+// import { Auth } from '@supabase/auth-ui-react';
 
 // interface ProfileProps {
 //     profileImage: string | null,
@@ -8,8 +10,9 @@ import "./Profile.scss"
 
 const Profile = (props) => {
     const { setProfileImage } = props
+     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const [name, setName] = useState("")
 
     const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -23,10 +26,32 @@ const Profile = (props) => {
       reader.readAsDataURL(file);
     }
   };
+useEffect(() => {
+  const fetchProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log(session)
+    const userId = session?.user?.id;
 
-  const handleChange = (e) => {
-    e.preventDefault()
-  }
+    if (!userId) {
+      console.log("No user logged in");
+      return;
+    }
+
+    console.log("Fetching profile for userId:", userId);
+
+    const res = await fetch(`/api/users/${userId}`);
+    if (!res.ok) {
+      console.error("Backend error:", res.statusText);
+      return;
+    }
+
+    const profile = await res.json();
+    setUser(profile);
+  };
+
+  fetchProfile();
+}, []);
+if (!user) return <div>Loading...</div>;
 
 return (
 <div className="profile-wrapper">
@@ -35,10 +60,11 @@ return (
         <input className="image-input" type="file" accept="image/*" onChange={handleImage} />
     </div>    
     <div className="profile-name-container">
-        <label htmlFor="profile-name">Input Name:</label>
-        <input className="profile-name" type="text" onChange={(e) => setName(e.target.value)} />
+        <div className="profile-name">Username: {user.username} </div>
     </div>    
-
+    <div className="profile-email-container">
+         <div className="profile-email">Email: {user.email} </div>
+    </div> 
 </div>
 )
 }

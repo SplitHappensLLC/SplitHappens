@@ -1,19 +1,16 @@
 import express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 // import apiRouter from ;
-import { Pool } from 'pg';
 import path from 'path';  // add for serving static files 
+import { createClient } from '@supabase/supabase-js';
+
+dotenv.config()
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// * set up postreSQL connection pool using pg (for supabase db) * //
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false } // necessary for supabase connect
-  });
-
-//pool.connect()
+const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 // * middleware to parse JSON & URL-encoded bodies * //
 app.use(express.json());
@@ -24,11 +21,10 @@ app.use(express.static(path.resolve(import.meta.dirname, '../../client')));  //
 
 
 // * error handling for DB queries * //
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, req: express.Request, res: express.Response, next: NextFunction) => {
     console.error(err.stack);
     res.status(500).json({ error: 'An unexpected error occurred!' });
 });
-
 
 // * route handlers * //
 
@@ -36,27 +32,92 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 app.get('/api/users/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
-        const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]); // $1 is placeholder in sql, way to refer to dynamic data in query. placeholders are numbered from $1 for first param, $2 for second, etc. 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'User not found'});
+        const { data, error } = await supabaseAdmin.from('users').select('*').eq('id', id).single();
+        if (error) throw error;
+        if (!data) {
+          return res.status(404).json({ error: 'User not found' });
         }
-        res.json(result.rows[0]);
-    } catch(err) {
+        res.json(data);
+      } catch (err) {
         res.status(500).json({ error: (err as Error).message });
-    }
+      }
 });
 
+app.post("/api/users/login", async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  try {
+    const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) return res.status(401).json({ error: error.message });
+
+    res.status(200).json({
+      user: data.user,
+      session: data.session
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
 
 // create a new user *** how to integrate with supabase auth for secure user creation??? 
-
-
+app.post('/api/users', async (req: Request, res: Response) => {
+    // @ts-ignore
+    const { username, password, email } = req.body;
+    console.log(username, password, email)
+    try {  // create user in auth.user via admin
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            password,
+            user_metadata: { username },
+            email_confirm: true
+        });
+        if (authError) throw authError;
+    
+        // insert profile into public.users (this assumes trigger isn't set!!! need to set up triggers on supabase for automation)
+        const { data: profileData, error: profileError } = await supabaseAdmin.from('users').insert(
+        { id: authData.user.id, username, email }).select().single();
+        if (profileError) throw profileError;
+        res.status(201).json(profileData);
+      } catch (err) {
+        res.status(500).json({ error: (err as Error).message });
+      }
+});
 
 // add a friend
-
+app.post('/api/friends', async (req: Request, res: Response) => {
+  const { user_id, friend_id, status } = req.body;
+  try {
+    const { data, error } = await supabaseAdmin.from('friends').insert({
+      user_id,
+      friend_id,
+      status
+    }).select().single();
+    if (error) throw error;
+    res.status(201).json(data)
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message })
+  }
+})
 
 
 // get friends of a user
-
+app.get('/api/friends/:user_id', async (req: Request, res: Response) => {
+  const { user_id } = req.params;
+  try {
+    const { data, error } = await supabaseAdmin.from('friends')
+      .select('users!friends_friend_id_fkey(*)')
+      .eq('user_id', user_id);
+      if (error) throw error;
+      res.json(data.map(item => item.users));
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message })
+  }
+})
 
 
 // create a new group and add creator as admin
