@@ -1,7 +1,6 @@
 import express from 'express';
 import { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
-// import apiRouter from ;
 import path from 'path';  // add for serving static files 
 import { createClient } from '@supabase/supabase-js';
 import { requireAuth } from "./middlewares/auth";
@@ -116,40 +115,60 @@ app.post('/api/users', async (req: Request, res: Response) => {
 });
 
 // add a friend
-app.post('/api/friends',authMiddleware, async (req: Request, res: Response) => {
+app.post('/api/friends', authMiddleware, async (req: Request, res: Response) => {
   const { friend_id, status } = req.body;
-  const user_id = req.user?.id; // get logged-in user
+  const user_id = req.user?.id;
 
   if (!user_id) return res.status(401).json({ error: "Unauthorized" });
   if (!friend_id) return res.status(400).json({ error: "Missing friend_id" });
 
+  console.log("User ID:", user_id);
+  console.log("Friend ID:", req.body.friend_id);
   try {
-    const { data, error } = await supabaseAdmin.from('friends').upsert(
-        { user_id, friend_id, status: status || 'pending' }, // default status if needed
-        { onConflict: ['user_id', 'friend_id'] } // prevent duplicates
-      ).select().single();
-    if (error) throw error;
-    res.status(201).json(data)
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message })
-  }
-})
+    // Check if friend already exists
+    const { data: existing, error: checkError } = await supabaseAdmin
+      .from('friends')
+      .select('*')
+      .eq('user_id', user_id)
+      .eq('friend_id', friend_id)
+      .single();
 
-app.get('/api/users', async (req, res) => {
-  const search = req.query.search as string | undefined;
-
-  try {
-    let query = supabaseAdmin.from('users').select('id, username, email');
-
-    if (search) {
-      query = query.ilike('username', `%${search}%`);
+    if (existing) {
+      return res.status(400).json({ error: "Friend already added" });
     }
 
-    const { data, error } = await query;
+    // Insert new friend
+    const { data, error } = await supabaseAdmin
+      .from('friends')
+      .insert({ user_id, friend_id, status: status || 'pending' })
+      .select()
+      .single();
+
     if (error) throw error;
 
-    res.json(data);
+    res.status(201).json(data);
   } catch (err) {
+    console.error("Add friend error:", err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+
+app.get('/api/getusers', authMiddleware, async (req: Request, res: Response) => {
+  const search = req.query.search as string || '';
+  const userId = req.user?.id;
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .select('id, username, email')
+      .ilike('username', `${search}%`)  // case-insensitive match
+      .not('id', 'eq', userId);          // exclude current user
+
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: (err as Error).message });
   }
 });
@@ -158,17 +177,25 @@ app.get('/api/users', async (req, res) => {
 // get friends of a user
 app.get('/api/friends/:user_id', async (req: Request, res: Response) => {
   const { user_id } = req.params;
-  try {
-    const { data, error } = await supabaseAdmin.from('friends')
-      .select('users!friends_friend_id_fkey(*)')
-      .eq('user_id', user_id);
-      if (error) throw error;
-      res.json(data.map(item => item.users));
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message })
-  }
-})
 
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('friends')
+      .select(`
+        friend_id,
+        status,
+        friend:friend_id ( id, username, email )
+      `)
+      .eq('user_id', user_id);
+
+    if (error) throw error;
+
+    res.json(data.map(item => item.friend));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
 
 // create a new group and add creator as admin
 app.post('/api/groups', authMiddleware, async (req: Request, res: Response) => {
@@ -257,8 +284,7 @@ app.get('api/expenses/:group_id', async (req: Request, res: Response) => {
 })
 
 
-// get balances for a user (aggregated)
-
+// 
 
 
 // * error handling for DB queries * //
