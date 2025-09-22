@@ -8,7 +8,7 @@ import { supabase } from "../../supabase/supabaseClient"; // adjust path
 
 // import StockList from "../../components/StockList"
 
-const Login = ({setIsLoggedIn}) => {
+const Login = ({setUserData, setIsLoggedIn}) => {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
 
@@ -27,6 +27,7 @@ const Login = ({setIsLoggedIn}) => {
     if (res.ok && data.user) {
       await supabase.auth.setSession(data.session)
       setIsLoggedIn(true);
+      setUserData(data)
       console.log("Logged in!", data.user);
     } else {
       setIsLoggedIn(false);

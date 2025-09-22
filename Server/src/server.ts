@@ -121,13 +121,58 @@ app.get('/api/friends/:user_id', async (req: Request, res: Response) => {
 
 
 // create a new group and add creator as admin
+app.post('/api/groups', async (req: Request, res: Response) => {
+  const { name, created_by } = req.body;
+  try {
+    const { data: groupData, error: groupError } = await supabaseAdmin.from('groups').insert({
+      name, 
+      created_by
+    }).select().single();
+    if (groupError) throw groupError;
 
+    const { error: memberError } = await supabaseAdmin.from('group_members').insert({
+      group_id: groupData.id,
+      user_id: created_by,
+      is_admin: true
+    });
+    if (memberError) throw memberError;
+    res.status(201).json(groupData);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message }) 
+  }
+});
 
 
 // join a group
+app.post('/api/group_members', async (req: Request, res: Response) => {
+  const { group_id, user_id } = req.body;
+  try {
+    const { data, error } = await supabaseAdmin.from('group_members').insert({
+      group_id,
+      user_id,
+      is_admin: false
+    }).select().single();
+    if (error) throw error;
+    res.status(201).json(data)
+  } catch(err) { 
+    res.status(500).json({ error: (err as Error).message }) 
+  }
+});
 
 
 // get groups for a user
+app.get('/api/groups/:user_id', async (req: Request, res: Response) => {
+  const { user_id } = req.params;
+  try {
+    const { data, error } = await supabaseAdmin.from('group_members')
+      .select('groups(*)')
+      .eq('user_id', user_id);
+    if (error) throw error;
+    res.json(data.map(item => item.groups))
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message }) 
+  }
+})
 
 
 
@@ -136,26 +181,20 @@ app.get('/api/friends/:user_id', async (req: Request, res: Response) => {
 
 
 // get expenses for a group
-
+app.get('api/expenses/:group_id', async (req: Request, res: Response) => {
+  const { group_id } = req.params;
+  try {
+    const { data , error } = await supabaseAdmin.from('expenses').select('*').eq('group_id', group_id);
+    if (error) throw error;
+    res.json(data);
+  } catch(err) {
+    res.status(500).json({ error: (err as Error).message }) 
+  }
+})
 
 
 // get balances for a user (aggregated)
-// app.get("/balances", async (req: Request, res: Response) => {
-//     const fromUserId = req.param.from_user;
-//     const toUserId = req.param.to_user;
 
-//     if (typeof req !== String) {
-
-//     }
-//     try {
-    
-//         SELECT amount 
-//         FROM balances
-//         WHERE from_user = fromUserId AND to_user = toUserId;
-
-
-//     }
-// } )
 
 
 app.listen(PORT, () => {

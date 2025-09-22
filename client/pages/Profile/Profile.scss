@@ -11,7 +11,11 @@ $InputColor: lighten(rgb(61, 96, 212), 42%);
     font-size: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 3rem;
+    // gap: 3rem;
+}
+
+.profile-wrapper > *:not(:first-child) {
+  margin-bottom: 3rem;
 }
 
 .profile-pic-container{
@@ -29,6 +33,17 @@ $InputColor: lighten(rgb(61, 96, 212), 42%);
     display: flex;
     flex-direction: column;
 }
+
+.profile-el{
+    background-color: rgb(204, 203, 203);
+    padding: .25rem;
+    border-radius: 5px;
+}
+
+.back-home-btn{
+    margin-bottom: .5rem;
+}
+
 
 // .profile-name{
 //     background-color: InputColor;

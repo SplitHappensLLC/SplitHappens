@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Link } from "react-router-dom"
 import "./Profile.scss"
 import { supabase } from "../../supabase/supabaseClient"; // adjust path
 // import { Auth } from '@supabase/auth-ui-react';
@@ -55,15 +56,16 @@ if (!user) return <div>Loading...</div>;
 
 return (
 <div className="profile-wrapper">
+    <Link className="back-home-btn" to='/' >Back to Home</Link>
     <div className="profile-pic-container">
         <label htmlFor="image-input">Upload Profile Image:</label>
         <input className="image-input" type="file" accept="image/*" onChange={handleImage} />
     </div>    
     <div className="profile-name-container">
-        <div className="profile-name">Username: {user.username} </div>
+        <div className="profile-name">Username: <span className="profile-el">{user.username}</span> </div>
     </div>    
     <div className="profile-email-container">
-         <div className="profile-email">Email: {user.email} </div>
+         <div className="profile-email">Email: <span className="profile-el">{user.email}</span> </div>
     </div> 
 </div>
 )

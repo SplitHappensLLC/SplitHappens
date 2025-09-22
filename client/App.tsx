@@ -5,11 +5,14 @@ import Home from './pages/Homepage/Home'
 import Login from './pages/Login/Login';
 import CreateUser from  './pages/CreateUser/CreateUser'
 import Profile from './pages/Profile/Profile';
+import Room from './pages/Room/Room'
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userData, setUserData] = useState(null)
   const [open, setOpen] = useState(false)
   const [profileImage, setProfileImage] = useState(null)
+  // const [roomId, setRoomId] = useState(null)
 
 
   return (
@@ -18,7 +21,7 @@ function App() {
  <section className='navbar-wrapper'>
     <nav className='navbar-container'>
       {isLoggedIn ? <div id='nav-blank'></div> : ""}
-      <h1>Split Happens</h1>
+      {isLoggedIn ?<h1 className='nav-hello-user'> Hi, {userData.user.user_metadata.username}</h1>  :<h1>Split Happens</h1>}
       {isLoggedIn ? <div className="nav-profile-icon" style={{backgroundImage: `url(${profileImage || ""})`}} onClick={() => setOpen(!open)}></div>: "" }
     </nav>
   </section>
@@ -34,10 +37,11 @@ function App() {
       </div>
     </div> 
     <Routes>
-      <Route path="/" element={isLoggedIn ? <Home /> : <Navigate to="login"/>}/>
-      <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />}/>
+      <Route path="/" element={isLoggedIn ? <Home userData={userData} /> : <Navigate to="login"/>}/>
+      <Route path="/login" element={<Login setUserData={setUserData} setIsLoggedIn={setIsLoggedIn} />}/>
       <Route path="/create-account" element={<CreateUser />}/>
       <Route path="/profile" element={<Profile setProfileImage={setProfileImage} />} />
+      <Route path="room/:roomId" element={<Room />} />
     </Routes>
   </section>
 </div>
