@@ -6,13 +6,14 @@ import Login from './pages/Login/Login';
 import CreateUser from  './pages/CreateUser/CreateUser'
 import Profile from './pages/Profile/Profile';
 import Room from './pages/Room/Room'
+import Friends from './pages/Friends/Friends';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userData, setUserData] = useState(null)
   const [open, setOpen] = useState(false)
   const [profileImage, setProfileImage] = useState(null)
-  // const [roomId, setRoomId] = useState(null)
+  // const [roomName, setRoomName] = useState("")
 
 
   return (
@@ -32,7 +33,7 @@ function App() {
         <hr></hr>
         <li><Link>History</Link></li>
         <hr></hr>
-        <li><Link>Friends</Link></li>
+        <li><Link to='/friends'>Friends</Link></li>
         <hr></hr>
       </div>
     </div> 
@@ -42,6 +43,7 @@ function App() {
       <Route path="/create-account" element={<CreateUser />}/>
       <Route path="/profile" element={<Profile setProfileImage={setProfileImage} />} />
       <Route path="room/:roomId" element={<Room />} />
+      <Route path="/friends" element={<Friends />} />
     </Routes>
   </section>
 </div>

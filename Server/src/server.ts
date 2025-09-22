@@ -4,13 +4,16 @@ import dotenv from 'dotenv';
 // import apiRouter from ;
 import path from 'path';  // add for serving static files 
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from "./middlewares/auth";
 
 dotenv.config()
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+
 const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
 
 // * middleware to parse JSON & URL-encoded bodies * //
 app.use(express.json());
@@ -19,14 +22,37 @@ app.use(express.urlencoded( { extended: true }));
 // * handle reqs for static files, assuming vite builds to '../../Client/dist' ?  * //
 app.use(express.static(path.resolve(import.meta.dirname, '../../client')));  //
 
-
-// * error handling for DB queries * //
-app.use((err: Error, req: express.Request, res: express.Response, next: NextFunction) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'An unexpected error occurred!' });
-});
-
 // * route handlers * //
+
+interface AuthenticatedRequest extends Request {
+  user: { id: string; email?: string };
+}
+
+export const requireAuth = (supabaseUrl: string, supabaseServiceKey: string) => {
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+  return async (req, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+
+    const token = authHeader.replace("Bearer ", "");
+
+    try {
+      const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+      if (error || !user) return res.status(401).json({ error: "Unauthorized" });
+
+      req.user = { id: user.id, email: user.email ?? undefined };
+      next(); // ✅ continue to the next middleware/route
+    } catch (err) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+};
+
+const authMiddleware = requireAuth(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 // fetch a user by ID 
 app.get('/api/users/:id', async (req: Request, res: Response) => {
@@ -53,6 +79,7 @@ app.post("/api/users/login", async (req: Request, res: Response) => {
     });
 
     if (error) return res.status(401).json({ error: error.message });
+    console.log(data.user)
 
     res.status(200).json({
       user: data.user,
@@ -78,7 +105,7 @@ app.post('/api/users', async (req: Request, res: Response) => {
         });
         if (authError) throw authError;
     
-        // insert profile into public.users (this assumes trigger isn't set!!! need to set up triggers on supabase for automation)
+        // insert profile into public.users
         const { data: profileData, error: profileError } = await supabaseAdmin.from('users').insert(
         { id: authData.user.id, username, email }).select().single();
         if (profileError) throw profileError;
@@ -89,20 +116,43 @@ app.post('/api/users', async (req: Request, res: Response) => {
 });
 
 // add a friend
-app.post('/api/friends', async (req: Request, res: Response) => {
-  const { user_id, friend_id, status } = req.body;
+app.post('/api/friends',authMiddleware, async (req: Request, res: Response) => {
+  const { friend_id, status } = req.body;
+  const user_id = req.user?.id; // get logged-in user
+
+  if (!user_id) return res.status(401).json({ error: "Unauthorized" });
+  if (!friend_id) return res.status(400).json({ error: "Missing friend_id" });
+
   try {
-    const { data, error } = await supabaseAdmin.from('friends').insert({
-      user_id,
-      friend_id,
-      status
-    }).select().single();
+    const { data, error } = await supabaseAdmin.from('friends').upsert(
+        { user_id, friend_id, status: status || 'pending' }, // default status if needed
+        { onConflict: ['user_id', 'friend_id'] } // prevent duplicates
+      ).select().single();
     if (error) throw error;
     res.status(201).json(data)
   } catch (err) {
     res.status(500).json({ error: (err as Error).message })
   }
 })
+
+app.get('/api/users', async (req, res) => {
+  const search = req.query.search as string | undefined;
+
+  try {
+    let query = supabaseAdmin.from('users').select('id, username, email');
+
+    if (search) {
+      query = query.ilike('username', `%${search}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
 
 
 // get friends of a user
@@ -121,18 +171,19 @@ app.get('/api/friends/:user_id', async (req: Request, res: Response) => {
 
 
 // create a new group and add creator as admin
-app.post('/api/groups', async (req: Request, res: Response) => {
-  const { name, created_by } = req.body;
+app.post('/api/groups', authMiddleware, async (req: Request, res: Response) => {
+  const { name } = req.body;  // user is not on req.body 
   try {
+    
     const { data: groupData, error: groupError } = await supabaseAdmin.from('groups').insert({
       name, 
-      created_by
+      created_by: req.user.id
     }).select().single();
     if (groupError) throw groupError;
 
     const { error: memberError } = await supabaseAdmin.from('group_members').insert({
       group_id: groupData.id,
-      user_id: created_by,
+      user_id: req.user.id,
       is_admin: true
     });
     if (memberError) throw memberError;
@@ -144,12 +195,12 @@ app.post('/api/groups', async (req: Request, res: Response) => {
 
 
 // join a group
-app.post('/api/group_members', async (req: Request, res: Response) => {
-  const { group_id, user_id } = req.body;
+app.post('/api/group_members',authMiddleware, async (req: Request, res: Response) => {
+  const { group_id, user_id } = req.body;  
   try {
     const { data, error } = await supabaseAdmin.from('group_members').insert({
       group_id,
-      user_id,
+      user_id: user_id,
       is_admin: false
     }).select().single();
     if (error) throw error;
@@ -159,10 +210,28 @@ app.post('/api/group_members', async (req: Request, res: Response) => {
   }
 });
 
+app.get('/api/name/:groupId', async (req, res) => {
+  const { groupId } = req.params;
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('groups')
+      .select('*') // select all columns including 'name'
+      .eq('id', groupId)
+      .single(); // return a single object, not an array
+
+    if (error) throw error;
+
+    res.json(data); // { id: "...", name: "Room Name", ... }
+  } catch (err) {
+    console.error("Error fetching group:", err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
 
 // get groups for a user
 app.get('/api/groups/:user_id', async (req: Request, res: Response) => {
-  const { user_id } = req.params;
+  const { user_id } = req.params
   try {
     const { data, error } = await supabaseAdmin.from('group_members')
       .select('groups(*)')
@@ -173,11 +242,6 @@ app.get('/api/groups/:user_id', async (req: Request, res: Response) => {
     res.status(500).json({ error: (err as Error).message }) 
   }
 })
-
-
-
-// create an expense, split (equally?) among group members, and update splits/balances
-
 
 
 // get expenses for a group
@@ -195,6 +259,13 @@ app.get('api/expenses/:group_id', async (req: Request, res: Response) => {
 
 // get balances for a user (aggregated)
 
+
+
+// * error handling for DB queries * //
+app.use((err: Error, req: express.Request, res: express.Response, next: NextFunction) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'An unexpected error occurred!' });
+});
 
 
 app.listen(PORT, () => {

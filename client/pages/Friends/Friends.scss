@@ -1,0 +1,18 @@
+
+
+.friends-wrapper{
+    padding: 2rem;
+    width: 100%;
+    height: 100%;
+    color: black;
+    background-color: white;
+    margin: 2rem;
+    font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    // gap: 3rem;
+}
+
+.friends-wrapper > *:not(:first-child) {
+  margin-bottom: 3rem;
+}

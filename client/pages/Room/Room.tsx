@@ -1,21 +1,31 @@
-import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import './Room.scss'
 
 
 const Room = () => {
   const { roomId } = useParams();
   console.log("Room ID from URL:", roomId); // should log the UUID
+  const [roomName, setRoomName] = useState("")
 
   useEffect(() => {
     const fetchRoom = async () => {
-      const res = await fetch(`/api/groups/${roomId}`);
+      const res = await fetch(`/api/name/${roomId}`);
       const room = await res.json();
-      console.log("Fetched room:", room);
+      console.log(room)
+      setRoomName(room.name);
+
+      // console.log("Fetched room:", room);
     };
     fetchRoom();
   }, [roomId]);
 
-  return <div>Welcome to room {roomId}</div>;
+  return (
+    <div className="room-wrapper">
+      <Link className="back-home-btn" to='/' >Back to Home</Link>
+      <div>Welcome to room <strong>{roomName}</strong></div>
+    </div>
+)
 }
 
 export default Room
