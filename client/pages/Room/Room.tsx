@@ -11,7 +11,7 @@ const Room = ({ roomName }) => {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<any>(null);
-  const [roomName, setRoomName] = useState("")
+  // const [roomName, setRoomName] = useState("")
 
   const { roomId } = useParams();
   console.log(roomName)
