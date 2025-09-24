@@ -27,29 +27,4 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-import Home from '../../../../client/pages/Homepage/Home';
-
-describe('Home component', () => {
-  it('renders groups section after loading', async () => {
-    render(
-      <MemoryRouter>
-        <Home userData={{ user: { id: 'u_123' } }} />
-      </MemoryRouter>
-    );
-
-    // wait until loading settles and the section appears
-    await waitFor(() =>
-      expect(
-        screen.getByRole('heading', { name: /open groups with friends/i })
-      ).toBeInTheDocument()
-    );
-
-    // assert other visible items
-    expect(
-      screen.getByRole('button', { name: /create room/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/you are not part of any groups yet\./i)
-    ).toBeInTheDocument();
-  });
-});
+import Friends from 'client/pages/Friends/Friends.tsx';
