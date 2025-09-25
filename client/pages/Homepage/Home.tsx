@@ -7,9 +7,6 @@ import { group } from 'console';
 
 // import StockList from "../../components/StockList"
 
-type UserData = { user?: { id?: string } };
-type Props = { userData?: UserData };
-
 const Home = ({ userData }: Props) => {
   const navigate = useNavigate();
   const [groups, setGroups] = useState([]);
