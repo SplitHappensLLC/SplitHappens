@@ -1,0 +1,443 @@
+// ExpenseForm.scss - Light theme to match your existing Room.scss
+.expense-form {
+  padding: 1.5rem;
+  color: #333;
+  background-color: white;
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .form-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    .label-small {
+      color: #555;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      font-weight: 500;
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      flex: 1;
+
+      .pill {
+        background-color: #007bff;
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+
+        .remove-btn {
+          background: none;
+          border: none;
+          color: white;
+          cursor: pointer;
+          font-size: 1.1rem;
+          padding: 0;
+          line-height: 1;
+
+          &:hover {
+            opacity: 0.8;
+          }
+        }
+      }
+    }
+  }
+
+  .member-selection {
+    h4 {
+      color: #333;
+      margin-bottom: 0.75rem;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .member-checkboxes {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      background-color: #f8f9fa;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .member-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #e9ecef;
+      }
+
+      input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #007bff;
+        flex-shrink: 0;
+      }
+
+      .member-name {
+        color: #333;
+        font-weight: 500;
+        flex-shrink: 0;
+      }
+
+      .member-email {
+        color: #6c757d;
+        font-size: 0.85rem;
+        margin-left: auto;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  .description-input {
+    width: 100%;
+    background-color: white;
+    border: none;
+    border-bottom: 2px solid #dee2e6;
+    color: #333;
+    font-size: 1.1rem;
+    padding: 0.75rem 0;
+    transition: border-color 0.2s;
+
+    &:focus {
+      outline: none;
+      border-bottom-color: #007bff;
+    }
+
+    &::placeholder {
+      color: #6c757d;
+    }
+  }
+
+  .amount-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.5rem 0;
+    transition: border-color 0.2s;
+
+    &:focus-within {
+      border-bottom-color: #007bff;
+    }
+
+    .dollar {
+      font-size: 2rem;
+      color: #6c757d;
+      margin-right: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .amount-input {
+      background: none;
+      border: none;
+      color: #333;
+      font-size: 2rem;
+      flex: 1;
+      min-width: 0;
+
+      &:focus {
+        outline: none;
+      }
+
+      &::placeholder {
+        color: #6c757d;
+      }
+
+      // Remove number input arrows
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      &[type="number"] {
+        -moz-appearance: textfield;
+      }
+    }
+  }
+
+  .subtext {
+    text-align: center;
+    color: #333;
+    font-size: 1rem;
+    line-height: 1.5;
+
+    .select {
+      background-color: white;
+      border: 1px dashed #007bff;
+      color: #007bff;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: inherit;
+      margin: 0 0.25rem;
+
+      &:focus {
+        outline: none;
+        border-style: solid;
+      }
+
+      option {
+        background-color: white;
+        color: #333;
+      }
+    }
+  }
+
+  .amount-per-person {
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+
+  .date-input {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    color: #333;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    flex: 1;
+
+    &:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+  }
+
+  .secondary-btn {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: #007bff;
+      color: #007bff;
+    }
+  }
+
+  .notes-input {
+    width: 100%;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    color: #333;
+    padding: 0.75rem;
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 1rem;
+
+    &:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    &::placeholder {
+      color: #6c757d;
+    }
+  }
+
+  .actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+
+    .cancel-btn {
+      background-color: white;
+      border: 1px solid #6c757d;
+      color: #6c757d;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+
+      &:hover:not(:disabled) {
+        background-color: #6c757d;
+        color: white;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    .save-btn {
+      background-color: #28a745;
+      border: none;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: background-color 0.2s;
+
+      &:hover:not(:disabled) {
+        background-color: #218838;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// Light theme modal styles that work with your existing styling
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background-color: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+
+  &.expense-modal {
+    max-width: 700px;
+  }
+
+  .modal-header {
+    background-color: #007bff;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 8px 8px 0 0;
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: white;
+      margin: 0;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .expense-form {
+    padding: 1rem;
+
+    .form-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+
+      .pills {
+        justify-content: center;
+      }
+    }
+
+    .amount-row {
+      .dollar {
+        font-size: 1.5rem;
+      }
+
+      .amount-input {
+        font-size: 1.5rem;
+      }
+    }
+
+    .actions {
+      flex-direction: column;
+
+      .cancel-btn,
+      .save-btn {
+        width: 100%;
+      }
+    }
+
+    .member-selection {
+      .member-checkboxes {
+        max-height: 150px;
+      }
+
+      .member-checkbox {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+
+        .member-email {
+          margin-left: 0;
+          width: 100%;
+          text-align: center;
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+
+  .modal {
+    margin: 0.5rem;
+    max-height: calc(100vh - 1rem);
+  }
+}

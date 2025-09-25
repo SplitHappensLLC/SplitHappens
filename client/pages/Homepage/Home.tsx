@@ -7,9 +7,20 @@ import { group } from 'console';
 
 // import StockList from "../../components/StockList"
 
-const Home = ({ userData }: Props) => {
+interface UserData {
+  user?: {
+    id?: string;
+  };
+}
+
+const Home = ({ userData }: { userData: UserData }) => {
   const navigate = useNavigate();
-  const [groups, setGroups] = useState([]);
+  type Group = {
+    id: string;
+    name: string;
+  };
+
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
 
   const userId = userData?.user?.id;
@@ -123,5 +134,4 @@ const Home = ({ userData }: Props) => {
     </div>
   );
 };
-
 export default Home;
