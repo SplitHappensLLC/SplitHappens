@@ -3,13 +3,14 @@ import { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import path from "path"; // add for serving static files
 import { createClient } from "@supabase/supabase-js";
-import { requireAuth } from "./middlewares/auth";
+//import { requireAuth } from "./middlewares/auth";
+import multer from "multer";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+const upload = multer(); // memory storage
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -514,6 +515,18 @@ app.get(
     }
   }
 );
+
+app.post("/api/receipts", authMiddleware, upload.single("receipt"), async (req, res) => {
+  const { group_id } = req.body;
+  const file = req.file; // field name "receipt"
+
+  if (!group_id || !file) {
+    return res.status(400).json({ error: "Missing group_id or receipt file" });
+  }
+
+  // TODO: save file somewhere (cloud, disk) and persist a record tied to group_id
+  return res.status(201).json({ ok: true });
+});
 
 // * error handling for DB queries * //
 app.use(

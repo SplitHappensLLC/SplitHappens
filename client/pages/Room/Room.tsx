@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import "./Room.scss";
-import { supabase } from "../../supabase/supabaseClient";
-import ExpenseForm from "../../components/ExpenseForm/ExpenseForm";
+import { useEffect, useRef, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import './Room.scss';
+import { supabase } from '../../supabase/supabaseClient';
+import ExpenseForm from '../../components/ExpenseForm/ExpenseForm';
 
 interface Expense {
   id: string;
@@ -46,7 +46,12 @@ const Room: React.FC<RoomProps> = ({ userData }) => {
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
-  const [groupName, setGroupName] = useState("");
+  const [groupName, setGroupName] = useState('');
+  const [receipts, setReceipts] = useState<
+    Array<{ id: string; url: string; name: string; local?: boolean }>
+  >([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const { roomId } = useParams();
 
@@ -59,10 +64,10 @@ const Room: React.FC<RoomProps> = ({ userData }) => {
         const res = await fetch(`/api/name/${roomId}`);
         if (res.ok) {
           const data = await res.json();
-          setGroupName(data.name || "");
+          setGroupName(data.name || '');
         }
       } catch (err) {
-        console.error("Error fetching room:", err);
+        console.error('Error fetching room:', err);
       }
     };
     fetchRoom();
@@ -88,7 +93,7 @@ const Room: React.FC<RoomProps> = ({ userData }) => {
     try {
       // Fetch expenses
       const expensesRes = await fetch(`/api/expenses/${roomId}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` }
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (expensesRes.ok) {
         const expensesData = await expensesRes.json();
@@ -97,15 +102,15 @@ const Room: React.FC<RoomProps> = ({ userData }) => {
 
       // Fetch group members
       const membersRes = await fetch(`/api/groups/${roomId}/members`, {
-        headers: { Authorization: `Bearer ${session.access_token}` }
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (membersRes.ok) {
         const membersData = await membersRes.json();
-        console.log(membersData, "membersData\n\n\\n\n\n");
+        console.log(membersData, 'membersData\n\n\\n\n\n');
         setMembers(membersData || []);
       }
     } catch (err) {
-      console.error("Error fetching group details:", err);
+      console.error('Error fetching group details:', err);
     }
   };
 
@@ -125,17 +130,17 @@ const Room: React.FC<RoomProps> = ({ userData }) => {
     notes?: string;
   }) => {
     if (!session?.access_token) {
-      alert("Not logged in");
+      alert('Not logged in');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch("/api/expenses", {
-        method: "POST",
+      const res = await fetch('/api/expenses', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           group_id: roomId,
@@ -144,27 +149,27 @@ const Room: React.FC<RoomProps> = ({ userData }) => {
           paid_by: expenseData.paidBy,
           split_with: expenseData.splitWith,
           date: expenseData.date,
-          notes: expenseData.notes
-        })
+          notes: expenseData.notes,
+        }),
       });
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Failed to add expense");
+        throw new Error(err.error || 'Failed to add expense');
       }
 
       setShowExpenseForm(false);
       await fetchGroupDetails();
     } catch (err) {
-      console.error("Error adding expense:", err);
-      alert("Error adding expense: " + (err as Error).message);
+      console.error('Error adding expense:', err);
+      alert('Error adding expense: ' + (err as Error).message);
     } finally {
       setLoading(false);
     }
   };
 
   const getCurrentUserId = () => {
-    return session?.user?.id || userData?.user?.id || "";
+    return session?.user?.id || userData?.user?.id || '';
   };
 
   const formatDate = (dateString: string) => {
@@ -172,54 +177,123 @@ const Room: React.FC<RoomProps> = ({ userData }) => {
   };
 
   const getMemberName = (userId: string) => {
-    if (userId === getCurrentUserId()) return "you";
+    if (userId === getCurrentUserId()) return 'you';
     const member = members.find((m) => m.id === userId);
-    return member?.username || "Unknown";
+    return member?.username || 'Unknown';
+  };
+
+  const openFilePicker = () => {
+    if (!fileInputRef.current) return;
+    fileInputRef.current.value = ''; // allow re-selecting the same file
+    fileInputRef.current.click();
+  };
+
+  const onFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!session?.access_token) return alert('Not logged in');
+    if (!roomId) return alert('No room selected');
+
+    // 1) Local preview first
+    const tempId = `temp-${Date.now()}`;
+    const localUrl = URL.createObjectURL(file);
+    setReceipts((prev) => [
+      { id: tempId, url: localUrl, name: file.name, local: true },
+      ...prev,
+    ]);
+
+    try {
+      setUploading(true);
+
+      // Build FormData (your current approach)
+      const form = new FormData();
+      form.append('receipt', file);
+      form.append('group_id', String(roomId));
+
+      const res = await fetch('/api/receipts', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: form,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to upload receipt');
+      }
+
+      const result = await res.json().catch(() => ({}));
+
+      // 2) If backend returns a URL, swap it in
+      const finalUrl: string | undefined =
+        result.url || result.publicUrl || result.location;
+
+      if (finalUrl) {
+        // Revoke the local URL and replace the temp card with the final URL
+        URL.revokeObjectURL(localUrl);
+        setReceipts((prev) =>
+          prev.map((r) =>
+            r.id === tempId ? { ...r, url: finalUrl, local: false } : r
+          )
+        );
+      } else {
+        // If no URL returned, keep the local preview as-is
+        // (Optional) You can choose to leave it, or show a toast saying "uploaded (no URL provided)".
+      }
+
+      alert('Receipt uploaded!');
+    } catch (err: any) {
+      console.error('Error uploading receipt:', err);
+      alert(err.message ?? 'Error uploading receipt');
+
+      // Remove the temp preview on failure
+      URL.revokeObjectURL(localUrl);
+      setReceipts((prev) => prev.filter((r) => r.id !== tempId));
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
-    <div className="room-wrapper">
-      <Link className="back-home-btn" to="/">
+    <div className='room-wrapper'>
+      <Link className='back-home-btn' to='/'>
         Back to Home
       </Link>
 
-      <header className="room-header">
-        <div className="group-info">
-          <div className="group-icon">✈️</div>
-          <div className="group-details">
-            <h1>{groupName || "Loading..."}</h1>
-            <span className="member-count">{members.length} people</span>
+      <header className='room-header'>
+        <div className='group-info'>
+          <div className='group-icon'>✈️</div>
+          <div className='group-details'>
+            <h1>{groupName || 'Loading...'}</h1>
+            <span className='member-count'>{members.length} people</span>
           </div>
         </div>
-        <div className="header-actions">
+        <div className='header-actions'>
           <button
-            className="btn btn-primary"
+            className='btn btn-primary'
             onClick={() => setShowExpenseForm(true)}
             disabled={loading || members.length === 0}
           >
             Add an expense
           </button>
-          <button className="btn btn-secondary">Settle up</button>
+          <button className='btn btn-secondary'>Settle up</button>
         </div>
       </header>
 
-      <div className="room-content-container">
-        <div className="expense-container">
+      <div className='room-content-container'>
+        <div className='expense-container'>
           {expenses.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-illustration">
-                <div className="sad-wallet">
-                  <div className="wallet-body"></div>
-                  <div className="wallet-tear"></div>
+            <div className='empty-state'>
+              <div className='empty-illustration'>
+                <div className='sad-wallet'>
+                  <div className='wallet-body'></div>
+                  <div className='wallet-tear'></div>
                 </div>
               </div>
               <h2>You have not added any expenses yet</h2>
-              <p>
-                To add a new expense, click the "Add an expense" button.
-              </p>
+              <p>To add a new expense, click the "Add an expense" button.</p>
             </div>
           ) : (
-            <div className="expense-list">
+            <div className='expense-list'>
               {expenses.map((expense) => {
                 const isCurrentUserPaid =
                   expense.paid_by === getCurrentUserId();
@@ -228,31 +302,31 @@ const Room: React.FC<RoomProps> = ({ userData }) => {
                 );
 
                 return (
-                  <div key={expense.id} className="expense-item">
-                    <div className="expense-icon">🧾</div>
-                    <div className="expense-details">
-                      <div className="expense-description">
-                        {expense.description || "Untitled expense"}
+                  <div key={expense.id} className='expense-item'>
+                    <div className='expense-icon'>🧾</div>
+                    <div className='expense-details'>
+                      <div className='expense-description'>
+                        {expense.description || 'Untitled expense'}
                       </div>
-                      <div className="expense-meta">
-                        {formatDate(expense.date)} • Paid by{" "}
+                      <div className='expense-meta'>
+                        {formatDate(expense.date)} • Paid by{' '}
                         {getMemberName(expense.paid_by)}
                         {expense.expense_splits && (
-                          <span className="split-info">
-                            {" • Split between "}
+                          <span className='split-info'>
+                            {' • Split between '}
                             {expense.expense_splits.length === members.length
-                              ? "everyone"
+                              ? 'everyone'
                               : `${expense.expense_splits.length} people`}
                           </span>
                         )}
                       </div>
                     </div>
-                    <div className="expense-amount">
-                      <div className="total-amount">
+                    <div className='expense-amount'>
+                      <div className='total-amount'>
                         ${expense.amount.toFixed(2)}
                       </div>
                       {userSplit && (
-                        <div className="your-share">
+                        <div className='your-share'>
                           {isCurrentUserPaid
                             ? `you lent $${(
                                 expense.amount - userSplit.amount
@@ -270,24 +344,52 @@ const Room: React.FC<RoomProps> = ({ userData }) => {
 
         <hr />
 
-        <div className="group-users-container">
+        <div className='group-users-container'>
+          {/* Upload Receipt button (top-right) */}
+          <button
+            className='upload-receipt-btn'
+            onClick={openFilePicker}
+            disabled={uploading}
+            aria-label='Upload receipt image'
+            title='Upload receipt'
+          >
+            {uploading ? 'Uploading...' : 'Upload receipt'}
+          </button>
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type='file'
+            accept='image/*'
+            onChange={onFileSelected}
+            style={{ display: 'none' }}
+          />
+          <div className='receipts-grid'>
+            {receipts.map((r) => (
+              <figure key={r.id} className='receipt-card'>
+                <img src={r.url} alt={r.name} />
+                <figcaption title={r.name}>{r.name}</figcaption>
+              </figure>
+            ))}
+          </div>
+
           <h3>Group Members ({members.length})</h3>
           {members.length === 0 ? (
             <p>Loading members...</p>
           ) : (
-            <div className="members-list">
+            <div className='members-list'>
               {members.map((member) => (
-                <div key={member.id} className="member-item">
-                  <div className="member-info">
-                    <span className="member-name">
+                <div key={member.id} className='member-item'>
+                  <div className='member-info'>
+                    <span className='member-name'>
                       {member.id === getCurrentUserId()
-                        ? "You"
+                        ? 'You'
                         : member.username}
                     </span>
-                    <span className="member-email">{member.email}</span>
+                    <span className='member-email'>{member.email}</span>
                   </div>
                   {member.is_admin && (
-                    <span className="admin-badge">Admin</span>
+                    <span className='admin-badge'>Admin</span>
                   )}
                 </div>
               ))}
@@ -298,17 +400,17 @@ const Room: React.FC<RoomProps> = ({ userData }) => {
 
       {showExpenseForm && members.length > 0 && (
         <div
-          className="modal-overlay"
+          className='modal-overlay'
           onClick={() => setShowExpenseForm(false)}
         >
           <div
-            className="modal expense-modal"
+            className='modal expense-modal'
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header">
+            <div className='modal-header'>
               <h2>Add an expense</h2>
               <button
-                className="close-btn"
+                className='close-btn'
                 onClick={() => setShowExpenseForm(false)}
               >
                 ×
