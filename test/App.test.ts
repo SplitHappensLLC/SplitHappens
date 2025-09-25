@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// 1) Mock router to use MemoryRouter; read current URL instead of hard-coding "/"
+// 1) Mock router to use MemoryRouter; read current URL
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>(
     'react-router-dom'
@@ -124,7 +124,7 @@ describe('<App /> routing & UI', () => {
     window.history.pushState({}, '', '/');
     setup();
 
-    // perform mocked login (also navigates to "/")
+    // perform mocked login
     await userEvent.click(
       await screen.findByRole('button', { name: /Sign In/i })
     );
