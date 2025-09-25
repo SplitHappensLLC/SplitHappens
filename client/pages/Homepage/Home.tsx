@@ -13,7 +13,7 @@ const [groups, setGroups] = useState([]);
 const [loading, setLoading] = useState(true);
 
 const userId = userData?.user?.id
-
+ 
 console.log(userData.user.id)
     const handleCreateRoom = async () => {
         const roomName = prompt("Enter room name")
